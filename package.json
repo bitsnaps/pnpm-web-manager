@@ -1,0 +1,13 @@
+{
+  "name": "pnpman",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon src/index.js"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.13.7",
+    "hono": "^4.6.15"
+  },
+  "devDependencies": {
+  }
+}

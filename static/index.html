@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PNPM Manage</title>
+    <link rel="stylesheet" href="https://unpkg.com/@ntohq/buefy-next/dist/buefy.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@mdi/font/css/materialdesignicons.min.css">
+  <script>
+    window.process = { env: { NODE_ENV: 'production' } };
+</script>   
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+    <script src="https://unpkg.com/@ntohq/buefy-next/dist/buefy.min.js"></script>
+</head>
+<body>
+  <div id="app" class="container">
+    <h1 class="title">pnpm Package Manager</h1>
+    <button class="button is-primary mb-3" @click="listPackages">List Packages</button>
+    <table class="table is-bordered is-striped is-hoverable is-fullwidth">
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Version</th>
+          <th>Resolved</th>
+          <th>Path</th>
+          <th>Dependencies</th>
+          <th>Dev Dependencies</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr v-for="pkg in packageData" :key="pkg.name">
+          <td>{{ pkg.from }}</td>
+          <td>{{ pkg.version }}</td>
+          <td>{{ '.../'+pkg.resolved.split('/').pop() }}</td>
+          <td>{{ '.../'+pkg.path.split('/').pop() }}</td>
+          <td>{{ pkg.dependencies }}</td>
+          <td>{{ pkg.devDependencies }}</td>
+        </tr>
+      </tbody>
+    </table>
+    <button class="button is-info mb-3" @click="auditPackages">Audit Packages</button>
+    <pre>{{ auditResult }}</pre>
+        <div class="field has-addons">
+          <div class="control">
+            <input class="input" v-model="packageName" type="text" placeholder="Package Name">
+          </div>
+          <div class="control">
+            <button class="button is-link" @click="whyPackage">Why</button>
+          </div>
+          <div class="control">
+              <button class="button is-danger" @click="uninstallPackage">Uninstall</button>
+          </div>
+        </div>
+        <pre>{{ whyResult }}</pre>
+
+
+  </div>
+  <script>
+const { createApp, ref, reactive } = Vue;
+
+const app = createApp({
+  setup() {
+    const message = ref('PNPM Manager');
+    const packageData = ref([]);
+    const fields = reactive([
+      { key: 'name', label: 'Name', sortable: true },
+      { key: 'version', label: 'Version', sortable: true },
+      { key: 'resolved', label: 'Resolved', sortable: false },
+      { key: 'path', label: 'Path', sortable: false },
+      { key: 'dependencies', label: 'Dependencies' },
+      { key: 'devDependencies', label: 'Dev Dependencies' }
+    ]);
+    const auditResult = ref('');
+    const whyResult = ref('');
+    const packageName = ref('');
+    const isLoading = ref(false);
+
+
+    const listPackages = async () => {
+      isLoading.value = true;
+      const response = await fetch('/api/list').then(res => res.json());
+      for (const key in response) {
+        // if (Object.hasOwnProperty.call(response, key)) {
+          packageData.value.push(response[key]);
+        // }
+      }
+      isLoading.value = false;
+    };
+
+    const auditPackages = async () => {
+      isLoading.value = true;
+      const response = await fetch('/api/audit').then(res => res.text());
+      auditResult.value = response;
+      isLoading.value = false;
+    };
+
+    const whyPackage = async () => {
+      isLoading.value = true;
+      const response = await fetch(`/api/why/${packageName.value}`).then(res => res.text());
+      whyResult.value = response;
+      isLoading.value = false;
+    };
+
+    const uninstallPackage = async () => {
+      isLoading.value = true;
+      const response = await fetch('/api/uninstall', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ packageName: packageName.value })
+      }).then(res => res.text());
+      alert(response);
+      packageData.value = [];
+      packageName.value = ''; // Clear the input field
+      isLoading.value = false;
+    };
+
+
+    return {
+      message,
+      packageData,
+      fields,
+      auditResult,
+      whyResult,
+      packageName,
+      listPackages,
+      auditPackages,
+      whyPackage,
+      uninstallPackage,
+      isLoading
+    };
+  }
+});
+
+app.use(Buefy.default);
+app.mount('#app');
+  </script>
+</body>
+</html>
